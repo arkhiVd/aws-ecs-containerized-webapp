@@ -82,6 +82,9 @@ resource "aws_lb_listener" "http" {
 resource "aws_ecs_cluster" "main" {
   name = "demo-cluster"
 }
+resource "aws_iam_service_linked_role" "ecs" {
+  aws_service_name = "ecs.amazonaws.com"
+}
 
 resource "aws_iam_role" "ecs_task_execution_role" {
   name = "demo-ecs-task-execution-role"
@@ -160,7 +163,10 @@ resource "aws_ecs_service" "main" {
     container_port   = 8080
   }
 
-  depends_on = [aws_lb_listener.http]
+  depends_on = [
+    aws_lb_listener.http,
+    aws_iam_service_linked_role.ecs
+  ]
 }
 
 output "app_url" {
