@@ -71,9 +71,9 @@ jobs:
   apply: 
     name: Terraform Apply
     runs-on: ubuntu-latest
-    needs: plan
+    needs: [plan, build-and-push] 
     environment: production
-    permissions:      # <-- ADD THIS BLOCK
+    permissions:     
       id-token: write
       contents: read
 
