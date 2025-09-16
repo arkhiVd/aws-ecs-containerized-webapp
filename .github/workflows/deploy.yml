@@ -49,6 +49,11 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
+      
+    - name: DEBUG - Show Role ARN
+      run: echo "The role being used is ${{ secrets.AWS_ROLE_ARN }}"
+      env:
+        AWS_ROLE_ARN: arn:aws:iam::615201069679:role/GitHubActions_ECS_Role
 
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
