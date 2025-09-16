@@ -1,0 +1,38 @@
+name: Destroy Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Type "destroy" to confirm you want to permanently delete all infrastructure.'
+        required: true
+        
+jobs:
+  destroy:
+    name: Terraform Destroy
+    runs-on: ubuntu-latest
+    
+    if: github.event.inputs.confirmation == 'destroy'
+    
+    permissions:
+      id-token: write 
+      contents: read
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+          role-to-assume: arn:aws:iam::615201069679:role/GitHubActions_ECS_Role
+          aws-region: ap-south-1
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+
+    - name: Terraform Init
+      run: terraform -chdir=iac init
+
+    - name: Terraform Destroy
+      run: terraform -chdir=iac destroy -auto-approve
