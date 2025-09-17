@@ -14,7 +14,7 @@ The architecture is designed for security, scalability, and operational excellen
 
 This diagram illustrates the flow of a user request through the live AWS environment.
 
-![Application Architecture Diagram](placeholder.png)
+![Application Architecture Diagram](Application_Architecture_Diagram.png)
 
 **Architectural Flow:**
 1.  A user navigates to the DNS name of the **Application Load Balancer (ALB)**.
@@ -37,6 +37,8 @@ This diagram illustrates the flow of a user request through the live AWS environ
 ---
 
 ## CI/CD Pipeline with GitHub Actions
+
+![CI/CD Pipeline Architecture](CI_CD_Pipeline_Architecture.png)
 
 The pipeline is defined in `.github/workflows/deploy.yml` and is the engine of this project.
 
