@@ -42,6 +42,7 @@ resource "aws_security_group" "ecs_sg" {
 resource "aws_ecr_repository" "app_repo" {
   name                 = "demo-assignment-repo"
   image_tag_mutability = "MUTABLE"
+  force_delete         = true
 }
 
 # ALB
