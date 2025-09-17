@@ -12,8 +12,6 @@ The architecture is designed for security, scalability, and operational excellen
 
 ### Application Runtime Architecture
 
-This diagram illustrates the flow of a user request through the live AWS environment.
-
 ![Application Architecture Diagram](Application_Architecture_Diagram.png)
 
 **Architectural Flow:**
