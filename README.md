@@ -42,8 +42,6 @@ The architecture on this branch is designed for maximum cost-effectiveness, maki
 
 The pipeline is defined in `.github/workflows/deploy.yml` and is the engine of this project. It is configured for manual triggers (`workflow_dispatch`) to provide full control over deployments.
 
-**(The description of the CI/CD pipeline stages remains the same as the main branch and can be referenced there for brevity.)**
-
 ---
 
 ## Terraform Highlights
