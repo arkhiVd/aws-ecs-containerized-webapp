@@ -97,3 +97,21 @@ To prevent ongoing AWS costs, a manual workflow is included to destroy all provi
 1.  Navigate to the **Actions** tab in GitHub.
 2.  Select the **"Destroy Infrastructure"** workflow.
 3.  Trigger it manually and type `destroy` when prompted to confirm.
+
+   
+## Branching Strategy & Cost Optimization
+
+This repository demonstrates two distinct architectural patterns managed via Git branches, showcasing an understanding of both production-readiness and cost management.
+
+### The `cost-optimized-no-alb` Branch
+
+For the purpose of this assignment and for long-running portfolio projects, it is critical to avoid incurring unnecessary costs. The `cost-optimized-no-alb` branch contains a modified infrastructure that runs **entirely within the AWS Free Tier**.
+
+**Architectural Modifications:**
+*   The **Application Load Balancer is completely removed**, as it is the primary source of cost.
+*   The ECS Fargate service is configured with `assign_public_ip = true`, which provisions the container with a public IP address, allowing it to be accessed directly from the internet.
+*   The ECS task's security group (`ecs_sg`) is modified to allow inbound traffic on port `8080` from `0.0.0.0/0` (the internet).
+
+**Trade-Offs:**
+*   **Pros:** Zero cost. Ideal for development, testing, and demonstration purposes.
+*   **Cons:** The task's public IP is **ephemeral** and will change on every redeployment. This architecture is also less secure than the `main` branch, as it exposes the container directly to the internet without the protective buffer of a load balancer. It lacks features like health checks, SSL termination, and advanced routing.
