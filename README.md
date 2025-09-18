@@ -2,7 +2,7 @@
 
 ![Terraform](https://img.shields.io/badge/Terraform-7B42BC?style=for-the-badge&logo=terraform&logoColor=white)![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)![AWS ECS](https://img.shields.io/badge/AWS%20ECS-FF9900?style=for-the-badge&logo=amazon-aws&logoColor=white)![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=github-actions&logoColor=white)![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
 
-This repository contains the complete solution for the AWS DevOps Engineer demo assignment. It showcases a production-grade, "push-to-deploy" CI/CD pipeline that automatically builds, containerizes, and deploys a Python Flask web application to a serverless AWS environment.
+This repository contains the my solution for the AWS DevOps Engineer demo assignment. It showcases a production-grade, "push-to-deploy" CI/CD pipeline that automatically builds, containerizes, and deploys a Python Flask web application to a serverless AWS environment.
 
 ---
 
@@ -59,7 +59,7 @@ The pipeline is defined in `.github/workflows/deploy.yml` and is the engine of t
 
 ## Terraform Highlights
 
-The Terraform code in the `/iac` directory demonstrates several professional patterns:
+The Terraform code in the `/iac` directory demonstrates:
 
 *   **Modular File Structure:** The infrastructure is logically separated into `vpc.tf` (networking) and `ecs.tf` (application services), making the codebase clean and easy to maintain.
 *   **Security Group Egress/Ingress Control:** The `ecs_sg` security group's ingress rule is explicitly tied to the ID of the `lb_sg` (`security_groups = [aws_security_group.lb_sg.id]`). This hardens the security by ensuring that only the load balancer can communicate with the application containers.

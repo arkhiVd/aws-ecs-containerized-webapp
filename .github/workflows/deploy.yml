@@ -1,8 +1,6 @@
 name: Deploy Python App to ECS
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
