@@ -1,33 +1,14 @@
-resource "aws_security_group" "lb_sg" {
-  name        = "demo-lb-sg"
-  description = "Allow HTTP inbound traffic"
-  vpc_id      = aws_vpc.main.id
-
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
-
+# ECS Security Group allowing inbound from internet
 resource "aws_security_group" "ecs_sg" {
   name        = "demo-ecs-tasks-sg"
-  description = "Allow inbound traffic from the LB"
+  description = "Allow inbound traffic from the internet to the container"
   vpc_id      = aws_vpc.main.id
 
   ingress {
-    from_port       = 8080
-    to_port         = 8080
-    protocol        = "tcp"
-    security_groups = [aws_security_group.lb_sg.id]
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] 
   }
 
   egress {
@@ -45,39 +26,6 @@ resource "aws_ecr_repository" "app_repo" {
   force_delete         = true
 }
 
-# ALB
-resource "aws_lb" "main" {
-  name               = "demo-app-lb"
-  internal           = false
-  load_balancer_type = "application"
-  security_groups    = [aws_security_group.lb_sg.id]
-  subnets            = [aws_subnet.public_a.id, aws_subnet.public_b.id]
-}
-
-# Target Group for ALB
-resource "aws_lb_target_group" "main" {
-  name        = "demo-app-tg"
-  port        = 8080
-  protocol    = "HTTP"
-  vpc_id      = aws_vpc.main.id
-  target_type = "ip"
-
-  health_check {
-    path = "/" # Flask app's login page is at the root
-  }
-}
-
-# Listener for ALB on port 80
-resource "aws_lb_listener" "http" {
-  load_balancer_arn = aws_lb.main.arn
-  port              = 80
-  protocol          = "HTTP"
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.main.arn
-  }
-}
 
 # ECS Cluster
 resource "aws_ecs_cluster" "main" {
@@ -144,7 +92,6 @@ resource "aws_ecs_task_definition" "app_task" {
   ])
 }
 
-# ECS Service
 resource "aws_ecs_service" "main" {
   name            = "demo-app-service"
   cluster         = aws_ecs_cluster.main.id
@@ -152,24 +99,16 @@ resource "aws_ecs_service" "main" {
   desired_count   = 1
   launch_type     = "FARGATE"
 
+  depends_on = [aws_iam_service_linked_role.ecs]
+
   network_configuration {
     subnets          = [aws_subnet.public_a.id, aws_subnet.public_b.id]
     security_groups  = [aws_security_group.ecs_sg.id]
     assign_public_ip = true
   }
-
-  load_balancer {
-    target_group_arn = aws_lb_target_group.main.arn
-    container_name   = "demo-app-container"
-    container_port   = 8080
-  }
-
-  depends_on = [
-    aws_lb_listener.http,
-    aws_iam_service_linked_role.ecs
-  ]
+  
 }
 
-output "app_url" {
-  value = aws_lb.main.dns_name
+output "access_instructions" {
+  value = "Deployment successful. Find the Public IP of your running task in the AWS ECS Console and access it via http://<PUBLIC_IP>:8080"
 }
