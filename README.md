@@ -2,35 +2,37 @@
 
 ![Terraform](https://img.shields.io/badge/Terraform-7B42BC?style=for-the-badge&logo=terraform&logoColor=white)![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)![AWS ECS](https://img.shields.io/badge/AWS%20ECS-FF9900?style=for-the-badge&logo=amazon-aws&logoColor=white)![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=github-actions&logoColor=white)![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
 
-This repository contains the my solution for the AWS DevOps Engineer demo assignment. It showcases a production-grade, "push-to-deploy" CI/CD pipeline that automatically builds, containerizes, and deploys a Python Flask web application to a serverless AWS environment.
+This repository contains the my solution for the AWS DevOps Engineer demo assignment. This branch, `cost-optimized-no-alb`, demonstrates an architecture that runs **entirely within the AWS Free Tier** by deploying the application without an Application Load Balancer.
+
+> For the production-ready architecture featuring an Application Load Balancer and private subnets, please see the `main` branch.
 
 ---
 
 ## Architecture Overview
 
-The architecture is designed for security, scalability, and operational excellence by leveraging serverless containers and a fully automated deployment workflow.
+The architecture on this branch is designed for maximum cost-effectiveness, making it ideal for development, testing, and portfolio hosting. It achieves this by assigning a public IP directly to the container, removing the need for a load balancer.
 
 ### Application Runtime Architecture
 
-![Application Architecture Diagram](Application_Architecture_Diagram.png)
+![Application Architecture Diagram - No ALB](Application_Architecture_Diagram_No_ALB.png)
 
 **Architectural Flow:**
-1.  A user navigates to the DNS name of the **Application Load Balancer (ALB)**.
-2.  The ALB, listening on port 80 in public subnets, receives the request. Its primary role is to act as the secure, public entry point to the application.
-3.  Based on its listener rules, the ALB forwards the traffic to the **ECS Fargate service** running in private subnets. This ensures the application containers are never directly exposed to the internet.
-4.  The **ECS Fargate Service** receives the request and routes it to a running instance of the **Python Flask Docker container**.
-5.  The application processes the request (e.g., validates the demo login) and sends the response back through the ALB to the user.
+1.  A user navigates directly to the **Public IP** of the ECS Fargate task on port **8080**.
+2.  The request from the internet is routed to the **ECS Fargate service** running in a public subnet.
+3.  The service's security group allows the inbound traffic on port 8080.
+4.  The **ECS Fargate Service** routes the request to the running instance of the **Python Flask Docker container**.
+5.  The application processes the request (e.g., validates the demo login) and sends the response directly back to the user.
 6.  All container logs (stdout/stderr) are automatically streamed to **Amazon CloudWatch Logs** for centralized monitoring and debugging.
 
 ---
 
 ## Core Concepts & Key Features
 
-*   **Serverless Container Orchestration:** Uses **AWS ECS on Fargate** to run containers without managing servers. This eliminates the operational overhead of patching, scaling, and maintaining EC2 instances, allowing the team to focus purely on the application.
-*   **Secure by Design Network:** The architecture employs a public/private subnet strategy. The Application Load Balancer is the only component exposed to the internet. The application containers run in isolated subnets with security groups configured to **only** accept traffic from the ALB, creating a secure application tier.
-*   **Infrastructure as Code (IaC):** The entire AWS infrastructure—from the VPC and networking to the ECS cluster and service definitions—is declaratively defined using **Terraform**. This ensures the environment is repeatable, version-controlled, and free from manual configuration errors.
-*   **Fully Automated Push-to-Deploy CI/CD:** The **GitHub Actions** pipeline handles the entire application lifecycle. A single `git push` to the `main` branch automatically builds the Docker image, pushes it to a private registry, and triggers Terraform to deploy the new version with zero downtime.
-*   **Dynamic Rolling Deployments:** The ECS service is configured for rolling updates. When the CI/CD pipeline updates the task definition with a new Docker image, ECS automatically launches a new container, waits for it to become healthy, and then drains and stops the old container, ensuring seamless updates.
+*   **Zero-Cost Hosting:** By removing the Application Load Balancer and using an ECS Fargate task with a public IP, the entire infrastructure runs within the generous AWS Free Tier limits.
+*   **Direct-to-Container Access:** The Fargate task is launched in a public subnet and assigned a public IP, allowing users to connect directly to the application.
+*   **Infrastructure as Code (IaC):** The entire AWS infrastructure is declaratively defined using **Terraform**, ensuring the environment is repeatable, version-controlled, and free from manual configuration errors.
+*   **Fully Automated Push-to-Deploy CI/CD:** The **GitHub Actions** pipeline handles the entire application lifecycle. A deployment can be manually triggered to automatically build the Docker image, push it to a private registry, and trigger Terraform to deploy the new version.
+*   **Dynamic Rolling Deployments:** The ECS service is configured for rolling updates. When a new version is deployed, ECS automatically launches a new container and stops the old one, ensuring seamless updates.
 
 ---
 
@@ -38,33 +40,19 @@ The architecture is designed for security, scalability, and operational excellen
 
 ![CI/CD Pipeline Architecture](CI_CD_Pipeline_Architecture.png)
 
-The pipeline is defined in `.github/workflows/deploy.yml` and is the engine of this project.
+The pipeline is defined in `.github/workflows/deploy.yml` and is the engine of this project. It is configured for manual triggers (`workflow_dispatch`) to provide full control over deployments.
 
-**Workflow Stages:**
-1.  **Secure AWS Authentication:** The pipeline uses **OpenID Connect (OIDC)** to establish a trust relationship with AWS IAM. This allows GitHub Actions to assume an IAM Role and receive temporary, short-lived credentials, a modern best practice that eliminates the need for long-lived access keys.
-2.  **Build and Push (`build-and-push` job):**
-    *   Checks out the source code.
-    *   Builds the Python Flask application into a Docker image based on the `Dockerfile`.
-    *   Logs into **Amazon ECR** (a private, secure Docker registry).
-    *   Tags the Docker image with the unique Git commit SHA for versioning and traceability.
-    *   Pushes the versioned image to ECR.
-3.  **Plan Infrastructure (`plan` job):**
-    *   As a safety check, this job runs `terraform plan`, using the new Docker image URL as an input variable. This allows for a manual review of the proposed infrastructure changes before they are applied.
-4.  **Apply Infrastructure (`apply` job):**
-    *   Upon successful planning, this job runs `terraform apply -auto-approve`.
-    *   It passes the new ECR image URL to the ECS task definition. This is the key step that informs ECS a new version of the application is available.
-    *   Terraform applies the change, and the ECS service controller handles the rolling deployment automatically.
+**(The description of the CI/CD pipeline stages remains the same as the main branch and can be referenced there for brevity.)**
 
 ---
 
 ## Terraform Highlights
 
 The Terraform code in the `/iac` directory demonstrates:
-
-*   **Modular File Structure:** The infrastructure is logically separated into `vpc.tf` (networking) and `ecs.tf` (application services), making the codebase clean and easy to maintain.
-*   **Security Group Egress/Ingress Control:** The `ecs_sg` security group's ingress rule is explicitly tied to the ID of the `lb_sg` (`security_groups = [aws_security_group.lb_sg.id]`). This hardens the security by ensuring that only the load balancer can communicate with the application containers.
-*   **Decoupled Infrastructure and Application Version:** The ECS task definition's `image` property is not hardcoded. It is sourced from a Terraform variable (`var.docker_image_url`), which is dynamically populated by the CI/CD pipeline. This makes the infrastructure code reusable and independent of any specific application build.
-*   **Remote State Management:** The Terraform backend is configured to use an **S3 bucket**, a critical best practice for collaborative environments and for running Terraform in an automated pipeline.
+*   **Public IP Assignment:** The `aws_ecs_service` resource has the `assign_public_ip = true` flag set in its `network_configuration`.
+*   **Direct Network Security:** The `ecs_sg` security group's ingress rule is configured to allow traffic on port `8080` from `0.0.0.0/0` (the internet), enabling direct access to the container.
+*   **Decoupled Infrastructure and Application Version:** The ECS task definition's `image` property is sourced from a Terraform variable (`var.docker_image_url`), which is dynamically populated by the CI/CD pipeline.
+*   **Remote State Management:** The Terraform backend is configured to use an **S3 bucket**, a critical best practice for running Terraform in an automated pipeline.
 
 ---
 
@@ -74,20 +62,21 @@ The Terraform code in the `/iac` directory demonstrates:
     *   An AWS Account.
     *   A GitHub Account and a fork of this repository.
     *   An S3 bucket for Terraform's remote state.
-
 2.  **Configuration:**
-    *   Set up an **IAM Role for OIDC** as described in the CI/CD section.
+    *   Set up an **IAM Role for OIDC**.
     *   Update `/iac/main.tf` with your S3 backend bucket name.
     *   Update `.github/workflows/deploy.yml` and `destroy.yml` with the ARN of your IAM role.
-
 3.  **Deployment:**
-    *   Commit and push the configuration changes to the `main` branch. The "Deploy Python App to ECS" workflow will trigger automatically.
+    *   Navigate to the **Actions** tab in your GitHub repository.
+    *   Select the "Deploy Python App to ECS" workflow.
+    *   Click "Run workflow" and ensure you select the `cost-optimized-no-alb` branch to deploy from.
 
 ## Testing the Application
 
-1.  After the `apply` job in the workflow succeeds, check its log output for the `app_url`.
-2.  Navigate to this URL in your browser.
-3.  Use the demo credentials to log in:
+1.  After the `apply` job in the workflow succeeds, you must **manually find the Public IP** of the running task.
+2.  Navigate to the **AWS ECS Console**, click your cluster, then the **Tasks** tab, and find the **Public IP** in the network section of your task.
+3.  Navigate to `http://<YOUR_PUBLIC_IP>:8080` in your browser.
+4.  Use the demo credentials to log in:
     *   **Email:** `hire-me@anshumat.org`
     *   **Password:** `HireMe@2025!`
 
