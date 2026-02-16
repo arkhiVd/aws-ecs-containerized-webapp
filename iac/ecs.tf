@@ -24,8 +24,8 @@ resource "aws_security_group" "ecs_sg" {
   vpc_id      = aws_vpc.main.id
 
   ingress {
-    from_port       = 8080
-    to_port         = 8080
+    from_port       = 80      # <--- CHANGE FROM 8080
+    to_port         = 80      # <--- CHANGE FROM 8080
     protocol        = "tcp"
     security_groups = [aws_security_group.lb_sg.id]
   }
@@ -55,15 +55,17 @@ resource "aws_lb" "main" {
 }
 
 # Target Group for ALB
+# iac/ecs.tf
+
 resource "aws_lb_target_group" "main" {
   name        = "demo-app-tg"
-  port        = 8080
+  port        = 80        # <--- CHANGE FROM 8080
   protocol    = "HTTP"
   vpc_id      = aws_vpc.main.id
   target_type = "ip"
 
   health_check {
-    path = "/" # Flask app's login page is at the root
+    path = "/" 
   }
 }
 
@@ -128,8 +130,8 @@ resource "aws_ecs_task_definition" "app_task" {
       essential = true
       portMappings = [
         {
-          containerPort = 8080
-          hostPort      = 8080
+          containerPort = 80    # <--- CHANGE FROM 8080
+          hostPort      = 80    # <--- CHANGE FROM 8080
         }
       ]
       logConfiguration = {
@@ -161,7 +163,7 @@ resource "aws_ecs_service" "main" {
   load_balancer {
     target_group_arn = aws_lb_target_group.main.arn
     container_name   = "demo-app-container"
-    container_port   = 8080
+    container_port   = 80      # <--- CHANGE FROM 8080
   }
 
   depends_on = [
